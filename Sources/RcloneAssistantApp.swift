@@ -6,15 +6,19 @@ struct RcloneAssistantApp: App {
 
     var body: some Scene {
         Window("Rclone Assistant", id: "main") {
-            Group {
-                if rclone.isInstalled {
-                    MainView()
-                } else {
-                    InstallerView()
-                }
+            if rclone.isInstalled {
+                MainView()
+            } else {
+                InstallerView()
             }
-            .environmentObject(rclone)
         }
-        .defaultSize(width: 550, height: 450)
+        .environmentObject(rclone)
+        .windowResizability(.contentSize)
+
+        Window("Log", id: "log") {
+            LogView()
+        }
+        .environmentObject(rclone)
+        .defaultSize(width: 700, height: 500)
     }
 }

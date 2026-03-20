@@ -8,8 +8,8 @@ struct OptionFieldView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             fieldControl
-            if !helpText.isEmpty {
-                Text(helpText)
+            if !option.helpSummary.isEmpty {
+                Text(option.helpSummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
@@ -19,12 +19,10 @@ struct OptionFieldView: View {
 
     @ViewBuilder
     private var fieldControl: some View {
-        if let examples = option.examples, !examples.isEmpty {
-            pickerField(examples: examples)
-        } else if option.type == "bool" {
-            toggleField
-        } else if option.type == "Tristate" {
-            tristateField
+        if option.hasExamples {
+            pickerField(examples: option.examples!)
+        } else if option.type == "bool" || option.type == "Tristate" {
+            boolField(unsetLabel: option.type == "Tristate" ? "Default (unset)" : "Default")
         } else if option.isPassword {
             passwordField
         } else if option.type == "int" {
@@ -47,17 +45,9 @@ struct OptionFieldView: View {
         }
     }
 
-    private var toggleField: some View {
+    private func boolField(unsetLabel: String) -> some View {
         Picker(label, selection: $value) {
-            Text("Default").tag("")
-            Text("true").tag("true")
-            Text("false").tag("false")
-        }
-    }
-
-    private var tristateField: some View {
-        Picker(label, selection: $value) {
-            Text("Default (unset)").tag("")
+            Text(unsetLabel).tag("")
             Text("true").tag("true")
             Text("false").tag("false")
         }
@@ -84,6 +74,9 @@ struct OptionFieldView: View {
     private var numericField: some View {
         TextField(label, text: $value)
             .textFieldStyle(.roundedBorder)
+            .onChange(of: value) {
+                value = String(value.filter { $0.isNumber || $0 == "-" })
+            }
     }
 
     private var textField: some View {
@@ -93,11 +86,5 @@ struct OptionFieldView: View {
 
     private var label: String {
         option.required ? "\(option.name) *" : option.name
-    }
-
-    private var helpText: String {
-        // First line of help, cleaned up
-        let first = option.help.components(separatedBy: "\n").first ?? ""
-        return first.trimmingCharacters(in: .whitespaces)
     }
 }

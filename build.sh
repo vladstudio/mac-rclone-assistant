@@ -9,6 +9,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Info.plist "$APP/Contents/"
 cp .build/release/rclone-assistant "$APP/Contents/MacOS/"
+cp AppIcon.icns "$APP/Contents/Resources/"
 
 pkill -x rclone-assistant 2>/dev/null || true
 rm -rf "/Applications/Rclone Assistant.app"

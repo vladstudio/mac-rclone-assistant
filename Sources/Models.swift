@@ -36,6 +36,14 @@ struct OptionDefinition: Decodable, Identifiable {
 
     var id: String { name }
 
+    var helpSummary: String {
+        (help.components(separatedBy: "\n").first ?? "").trimmingCharacters(in: .whitespaces)
+    }
+
+    var hasExamples: Bool {
+        examples?.isEmpty == false
+    }
+
     enum CodingKeys: String, CodingKey {
         case name = "Name"
         case help = "Help"
@@ -69,16 +77,18 @@ struct OptionExample: Decodable, Identifiable {
 struct RemoteConfig: Identifiable {
     let name: String
     let type: String
-    let parameters: [String: String]
+    let parameters: [String: String] // does NOT contain "type" key
 
     var id: String { name }
 
     static func fromDump(_ dump: [String: [String: String]]) -> [RemoteConfig] {
         dump.map { name, params in
-            RemoteConfig(
+            var cleaned = params
+            cleaned.removeValue(forKey: "type")
+            return RemoteConfig(
                 name: name,
                 type: params["type"] ?? "unknown",
-                parameters: params
+                parameters: cleaned
             )
         }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
