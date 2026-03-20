@@ -96,24 +96,22 @@ final class RcloneService: ObservableObject {
     @Published var log: [LogEntry] = []
 
     /// Provider name → description lookup for O(1) access
-    var providerDescriptions: [String: String] = [:]
+    @Published var providerDescriptions: [String: String] = [:]
+
+    private static let rcloneCandidates = [
+        "/opt/homebrew/bin/rclone",
+        "/usr/local/bin/rclone",
+        "/usr/bin/rclone",
+    ]
 
     init() {
-        rclonePath = Shell.findExecutable(candidates: [
-            "/opt/homebrew/bin/rclone",
-            "/usr/local/bin/rclone",
-            "/usr/bin/rclone",
-        ])
+        rclonePath = Shell.findExecutable(candidates: Self.rcloneCandidates)
     }
 
     var isInstalled: Bool { rclonePath != nil }
 
     func refreshPath() {
-        rclonePath = Shell.findExecutable(candidates: [
-            "/opt/homebrew/bin/rclone",
-            "/usr/local/bin/rclone",
-            "/usr/bin/rclone",
-        ])
+        rclonePath = Shell.findExecutable(candidates: Self.rcloneCandidates)
     }
 
     func loadRemotes() async throws {

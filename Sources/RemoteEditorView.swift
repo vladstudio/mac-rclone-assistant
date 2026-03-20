@@ -48,26 +48,48 @@ struct RemoteEditorView: View {
         }
     }
 
+    /// Add mode shows provider picker first, then config form once selected
+    private var showingProviderPicker: Bool {
+        !isEditing && selectedProvider.isEmpty
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                Form {
-                    nameAndTypeSection
-                    if provider != nil {
-                        subProviderSection
-                        optionsSection
-                        authSection
+            if showingProviderPicker {
+                providerPickerStep
+            } else {
+                ScrollView {
+                    Form {
+                        nameAndTypeSection
+                        if let provider {
+                            setupGuideSection(provider)
+                            subProviderSection
+                            optionsSection
+                            authSection
+                        }
                     }
+                    .formStyle(.grouped)
                 }
-                .formStyle(.grouped)
+                .frame(minHeight: 400, maxHeight: .infinity)
             }
-            .frame(minHeight: 400, maxHeight: .infinity)
 
             Divider()
             bottomBar
         }
         .onAppear(perform: populateForEdit)
         .errorAlert($error)
+    }
+
+    private var providerPickerStep: some View {
+        ProviderPickerView(
+            providers: rclone.providers,
+            selection: $selectedProvider
+        )
+        .onChange(of: selectedProvider) {
+            values = [:]
+            authComplete = false
+        }
+        .frame(minHeight: 400, maxHeight: .infinity)
     }
 
     // MARK: - Sections
@@ -77,20 +99,56 @@ struct RemoteEditorView: View {
         Section {
             if isEditing {
                 LabeledContent("Name", value: remoteName)
-                LabeledContent("Type", value: selectedProvider)
+                LabeledContent("Type", value: rclone.providerDescriptions[selectedProvider] ?? selectedProvider)
             } else {
                 TextField("Name", text: $remoteName)
                     .textFieldStyle(.roundedBorder)
 
-                Picker("Storage", selection: $selectedProvider) {
-                    Text("Select a provider...").tag("")
-                    ForEach(rclone.providers) { p in
-                        Text("\(p.name) — \(p.description)").tag(p.name)
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(rclone.providerDescriptions[selectedProvider] ?? selectedProvider)
+                        Text(selectedProvider)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    Button("Change") {
+                        selectedProvider = ""
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+        }
+    }
+
+    private func setupGuideSection(_ provider: ProviderDefinition) -> some View {
+        let links = provider.setupLinks
+
+        return Section("Setup Guide") {
+            if let docsURL = URL(string: "https://rclone.org/\(provider.prefix)/") {
+                Link(destination: docsURL) {
+                    HStack {
+                        Text("Full documentation on rclone.org")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
                     }
                 }
-                .onChange(of: selectedProvider) {
-                    values = [:]
-                    authComplete = false
+            }
+
+            if provider.hasOAuth {
+                Label("This provider uses OAuth. Fill in optional fields below, then click Authorize.",
+                      systemImage: "person.badge.key")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(links) { link in
+                Link(destination: link.url) {
+                    HStack {
+                        Text(link.label)
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                    }
                 }
             }
         }
@@ -126,7 +184,7 @@ struct RemoteEditorView: View {
 
     @ViewBuilder
     private var authSection: some View {
-        if let provider, provider.options.contains(where: { $0.name == "token" }) {
+        if let provider, provider.hasOAuth {
             Section("Authorization") {
                 if authorizing {
                     HStack {

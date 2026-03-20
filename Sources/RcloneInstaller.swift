@@ -119,10 +119,8 @@ extension ProcessInfo {
     var machineArchitecture: String {
         var sysinfo = utsname()
         uname(&sysinfo)
-        return withUnsafePointer(to: &sysinfo.machine) {
-            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
-                String(validatingCString: $0) ?? "arm64"
-            }
+        return withUnsafeBytes(of: &sysinfo.machine) {
+            String(cString: $0.bindMemory(to: CChar.self).baseAddress!)
         }
     }
 }

@@ -57,7 +57,7 @@ struct MainView: View {
         } message: {
             Text("Delete \"\(remoteToDelete?.name ?? "")\"? This cannot be undone.")
         }
-        .sheet(isPresented: .isNotNil($renameTarget)) {
+        .sheet(isPresented: .isNotNil($renameTarget), onDismiss: { renameTarget = nil; newName = "" }) {
             RenameSheet(name: $newName) {
                 if let r = renameTarget {
                     let captured = newName

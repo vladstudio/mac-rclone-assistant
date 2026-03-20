@@ -10,6 +10,7 @@ struct ProviderDefinition: Decodable, Identifiable {
     let hide: Bool
 
     var id: String { name }
+    var hasOAuth: Bool { options.contains { $0.name == "token" } }
 
     enum CodingKeys: String, CodingKey {
         case name = "Name"
@@ -39,6 +40,10 @@ struct OptionDefinition: Decodable, Identifiable {
     var helpSummary: String {
         (help.components(separatedBy: "\n").first ?? "").trimmingCharacters(in: .whitespaces)
     }
+
+    var isBool: Bool { type == "bool" }
+    var isTristate: Bool { type == "Tristate" }
+    var isInt: Bool { type == "int" }
 
     var hasExamples: Bool {
         examples?.isEmpty == false
@@ -91,5 +96,54 @@ struct RemoteConfig: Identifiable {
                 parameters: cleaned
             )
         }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+}
+
+// MARK: - Provider setup links
+
+struct SetupLink: Identifiable {
+    let label: String
+    let url: URL
+    var id: URL { url }
+}
+
+private let urlPattern = try! NSRegularExpression(pattern: "https?://[^\\s\"\\\\)>]+")
+private let skipHosts = ["github.com/rclone", "godoc.org", "localhost", "example.com"]
+
+extension ProviderDefinition {
+    var setupLinks: [SetupLink] {
+        var result: [SetupLink] = []
+        var seenLabels: Set<String> = []
+
+        for opt in options {
+            let help = opt.help
+            let matches = urlPattern.matches(in: help, range: NSRange(help.startIndex..., in: help))
+            for match in matches {
+                guard let range = Range(match.range, in: help) else { continue }
+                var urlStr = String(help[range])
+                while urlStr.last == "." || urlStr.last == "," || urlStr.last == "`" {
+                    urlStr.removeLast()
+                }
+                guard let url = URL(string: urlStr) else { continue }
+                let host = url.host ?? ""
+                if skipHosts.contains(where: { host.contains($0) || urlStr.contains($0) }) { continue }
+
+                let label: String
+                if opt.name.contains("api_key") || opt.name.contains("key") {
+                    label = "Get API key"
+                } else if opt.name.contains("token") {
+                    label = "Get access token"
+                } else if host.contains("console") || urlStr.contains("admin") || urlStr.contains("dashboard") {
+                    label = "Provider console"
+                } else {
+                    label = host
+                }
+
+                if seenLabels.insert(label).inserted {
+                    result.append(SetupLink(label: label, url: url))
+                }
+            }
+        }
+        return result
     }
 }

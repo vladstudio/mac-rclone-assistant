@@ -21,11 +21,11 @@ struct OptionFieldView: View {
     private var fieldControl: some View {
         if option.hasExamples {
             pickerField(examples: option.examples!)
-        } else if option.type == "bool" || option.type == "Tristate" {
-            boolField(unsetLabel: option.type == "Tristate" ? "Default (unset)" : "Default")
+        } else if option.isBool || option.isTristate {
+            boolField(unsetLabel: option.isTristate ? "Default (unset)" : "Default")
         } else if option.isPassword {
             passwordField
-        } else if option.type == "int" {
+        } else if option.isInt {
             numericField
         } else {
             textField
@@ -75,7 +75,10 @@ struct OptionFieldView: View {
         TextField(label, text: $value)
             .textFieldStyle(.roundedBorder)
             .onChange(of: value) {
-                value = String(value.filter { $0.isNumber || $0 == "-" })
+                let filtered = String(value.enumerated().filter { i, c in
+                    c.isNumber || (c == "-" && i == 0)
+                }.map(\.element))
+                if filtered != value { value = filtered }
             }
     }
 
