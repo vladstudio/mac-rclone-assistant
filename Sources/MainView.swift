@@ -20,6 +20,11 @@ struct MainView: View {
     @State private var newName = ""
     @Environment(\.openWindow) private var openWindow
 
+    private var isListScreen: Bool {
+        if case .list = screen { return true }
+        return false
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             switch screen {
@@ -36,6 +41,8 @@ struct MainView: View {
             }
         }
         .frame(width: 500)
+        .frame(minHeight: isListScreen ? nil : 450,
+               maxHeight: isListScreen ? nil : .infinity)
         .navigationTitle(windowTitle)
         .toolbar { toolbarContent }
         .errorAlert($error)

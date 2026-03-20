@@ -171,9 +171,12 @@ final class RcloneService: ObservableObject {
             throw RcloneError.notInstalled
         }
         let cmd = redactCommand(arguments)
+        // Don't log raw output of commands that return sensitive data
+        let suppressOutput = arguments.count >= 2 && arguments[0] == "config"
+            && (arguments[1] == "dump" || arguments[1] == "providers")
         do {
             let result = try await Shell.run(executable: path, arguments: arguments)
-            appendLog(LogEntry(date: Date(), command: cmd, output: result, isError: false))
+            appendLog(LogEntry(date: Date(), command: cmd, output: suppressOutput ? "(output hidden)" : result, isError: false))
             return result
         } catch {
             appendLog(LogEntry(date: Date(), command: cmd, output: error.localizedDescription, isError: true))

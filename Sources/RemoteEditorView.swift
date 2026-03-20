@@ -50,15 +50,18 @@ struct RemoteEditorView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Form {
-                nameAndTypeSection
-                if provider != nil {
-                    subProviderSection
-                    optionsSection
-                    authSection
+            ScrollView {
+                Form {
+                    nameAndTypeSection
+                    if provider != nil {
+                        subProviderSection
+                        optionsSection
+                        authSection
+                    }
                 }
+                .formStyle(.grouped)
             }
-            .formStyle(.grouped)
+            .frame(minHeight: 400, maxHeight: .infinity)
 
             Divider()
             bottomBar
